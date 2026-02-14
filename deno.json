@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "test": "deno test --allow-net",
+    "tw": "deno run --allow-net --allow-write --allow-read --allow-run twitter-movie-downloader.ts",
+    "lint": "deno run -A npm:@biomejs/biome check",
+    "format": "deno run -A npm:@biomejs/biome check --write",
+    "check": "deno run -A npm:@biomejs/biome check"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window"]
+  }
+}

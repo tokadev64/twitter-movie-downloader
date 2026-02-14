@@ -1,0 +1,72 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "deno@latest",
+    "ffmpeg@6",
+    "biome@latest",
+    "git@2",
+    "curl@8",
+    "wget@1",
+    "httpie@3",
+    "jq@1",
+    "yq-go@4",
+    "ripgrep@14",
+    "fd@9",
+    "bat@0.24",
+    "eza@0.18",
+    "nmap@7",
+    "tcpdump@4",
+    "wireshark@4"
+  ],
+  "env": {
+    "DENO_DIR": "$DEVBOX_PROJECT_ROOT/.deno",
+    "DENO_FUTURE": "1",
+    "BIOME_CACHE_DIR": "$DEVBOX_PROJECT_ROOT/.biome",
+    "PATH": "$DEVBOX_PROJECT_ROOT/bin:$PATH"
+  },
+  "shell": {
+    "init_hook": [
+      "# プロジェクトバイナリディレクトリの作成",
+      "mkdir -p $DEVBOX_PROJECT_ROOT/bin",
+      "",
+      "# Welcome message",
+      "echo \"🎬 Twitter/X Video Downloader 開発環境\"",
+      "echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"",
+      "echo \"Deno: $(deno --version | head -n1)\"",
+      "echo \"FFmpeg: $(ffmpeg -version | head -n1)\"",
+      "echo \"\"",
+      "",
+      "# エイリアスの設定",
+      "alias tw='deno task tw'",
+      "alias ll='eza -la --icons'",
+      "alias cat='bat --style=numbers'",
+      "alias find='fd'",
+      "alias grep='rg'",
+      "",
+      "# Biomeのグローバルインストール（初回のみ）",
+      "if ! command -v biome &> /dev/null; then",
+      "    deno install --allow-env --allow-read --allow-sys --global npm:@biomejs/biome",
+      "fi",
+      "",
+      "# 開発サーバー用ポートの確認",
+      "function check-ports() {",
+      "    echo \"📡 ポート使用状況:\"",
+      "    lsof -i :8000 -i :3000 -i :5173 2>/dev/null || echo \"  全ポート利用可能\"",
+      "}"
+    ],
+    "scripts": {
+      "tw": "deno run --allow-net --allow-write --allow-read --allow-run twitter-video-downloader.ts",
+      "test": "deno test --allow-net",
+      "lint": "biome check",
+      "format": "biome check --write",
+      "check": "biome check && deno check twitter-video-downloader.ts",
+      "clean": "rm -rf .deno .biome",
+      "setup": "deno cache twitter-video-downloader.ts",
+      "help": "echo '📝 利用可能なコマンド:' && echo '  devbox run tw <URL>  - 動画をダウンロード' && echo '  devbox run test     - テストを実行' && echo '  devbox run lint     - コードをチェック' && echo '  devbox run format   - コードを整形' && echo '  devbox run check    - 型チェックとlint' && echo '  devbox run clean    - キャッシュをクリア' && echo '  devbox run setup    - 依存関係をキャッシュ'"
+    }
+  },
+  "include": [
+    "path:.envrc",
+    "path:biome.json"
+  ]
+}
