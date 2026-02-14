@@ -1,4 +1,6 @@
-#!/usr/bin/env -S deno run --allow-net --allow-write --allow-read --allow-run
+#!/usr/bin/env -S deno run --allow-net --allow-write --allow-read --allow-run --allow-env
+
+import { basename } from "jsr:@std/path";
 
 interface VideoVariant {
   bitrate?: number;
@@ -6,30 +8,131 @@ interface VideoVariant {
   url: string;
 }
 
-interface MediaInfo {
+export interface MediaInfo {
   videoUrl: string;
-  audioUrl?: string;
   quality: string;
+}
+
+const GRAPHQL_QUERY_ID = "2ICDjqPd81tulZcYrtpTuQ";
+
+// Twitter ウェブクライアントの公開 Bearer Token
+// セキュリティ上、環境変数での上書きを推奨
+const DEFAULT_BEARER_TOKEN =
+  "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
+
+const GRAPHQL_FEATURES = {
+  creator_subscriptions_tweet_preview_api_enabled: true,
+  tweetypie_unmention_optimization_enabled: true,
+  responsive_web_edit_tweet_api_enabled: true,
+  graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+  view_counts_everywhere_api_enabled: true,
+  longform_notetweets_consumption_enabled: true,
+  responsive_web_twitter_article_tweet_consumption_enabled: false,
+  tweet_awards_web_tipping_enabled: false,
+  freedom_of_speech_not_reach_fetch_enabled: true,
+  standardized_nudges_misinfo: true,
+  tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+  longform_notetweets_rich_text_read_enabled: true,
+  longform_notetweets_inline_media_enabled: true,
+  responsive_web_graphql_exclude_directive_enabled: true,
+  verified_phone_label_enabled: false,
+  responsive_web_media_download_video_enabled: false,
+  responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+  responsive_web_graphql_timeline_navigation_enabled: true,
+  responsive_web_enhance_cards_enabled: false,
+};
+
+export function extractTweetId(url: string): string {
+  const trimmed = url.trim();
+
+  // 数字のみの場合は直接 tweet ID として扱う
+  if (/^\d+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const pattern = /(?:mobile\.)?(?:twitter|x)\.com\/\w+\/status\/(\d+)/;
+  const match = trimmed.match(pattern);
+  if (match) return match[1];
+
+  throw new Error("Invalid Twitter/X URL");
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: Twitter API response has complex dynamic structure
+export function extractMediaInfo(tweetData: any): MediaInfo[] {
+  if (!tweetData.data?.tweetResult?.result) {
+    throw new Error("Tweet data not available");
+  }
+
+  const result = tweetData.data.tweetResult.result;
+
+  if (result.__typename === "TweetTombstone") {
+    throw new Error("Tweet is not available (deleted, protected, or restricted)");
+  }
+
+  // Standard tweets: result.legacy.entities.media
+  // Visibility-restricted tweets: result.tweet.legacy.entities.media
+  const media = result.legacy?.entities?.media || result.tweet?.legacy?.entities?.media;
+
+  if (!media || !Array.isArray(media)) {
+    throw new Error("No media found in tweet");
+  }
+
+  const mediaList: MediaInfo[] = [];
+
+  for (const item of media) {
+    if (item.type === "video" || item.type === "animated_gif") {
+      const videoInfo = item.video_info;
+
+      const m3u8Variant = videoInfo.variants.find(
+        (v: VideoVariant) => v.content_type === "application/x-mpegURL",
+      );
+
+      const mp4Variants = videoInfo.variants
+        .filter((v: VideoVariant) => v.content_type === "video/mp4")
+        .sort((a: VideoVariant, b: VideoVariant) => {
+          const bitrateA = a.bitrate || 0;
+          const bitrateB = b.bitrate || 0;
+          return bitrateB - bitrateA;
+        });
+
+      if (m3u8Variant) {
+        mediaList.push({
+          videoUrl: m3u8Variant.url,
+          quality: "HLS",
+        });
+      }
+
+      for (const variant of mp4Variants) {
+        mediaList.push({
+          videoUrl: variant.url,
+          quality: variant.bitrate ? `${variant.bitrate}` : "unknown",
+        });
+      }
+    }
+  }
+
+  return mediaList;
+}
+
+export function sanitizeOutputPath(outputPath: string | undefined, tweetId: string): string {
+  if (!outputPath) {
+    return `twitter_video_${tweetId}.mp4`;
+  }
+  return basename(outputPath);
+}
+
+function validateVideoUrl(url: string): void {
+  if (!url.startsWith("https://")) {
+    throw new Error("Invalid video URL: HTTPS required");
+  }
 }
 
 class TwitterVideoDownloader {
   private guestToken?: string;
-  private bearerToken =
-    "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
+  private readonly bearerToken: string;
 
-  private extractTweetId(url: string): string {
-    const patterns = [
-      /twitter\.com\/\w+\/status\/(\d+)/,
-      /x\.com\/\w+\/status\/(\d+)/,
-      /t\.co\/(\w+)/,
-    ];
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-
-    throw new Error("Invalid Twitter/X URL");
+  constructor() {
+    this.bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN") ?? DEFAULT_BEARER_TOKEN;
   }
 
   private async getGuestToken(): Promise<string> {
@@ -41,7 +144,7 @@ class TwitterVideoDownloader {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to get guest token");
+      throw new Error(`Failed to get guest token: ${response.status}`);
     }
 
     const data = await response.json();
@@ -54,7 +157,14 @@ class TwitterVideoDownloader {
       this.guestToken = await this.getGuestToken();
     }
 
-    const url = `https://api.twitter.com/graphql/2ICDjqPd81tulZcYrtpTuQ/TweetResultByRestId?variables=%7B%22tweetId%22%3A%22${tweetId}%22%2C%22withCommunity%22%3Afalse%2C%22includePromotedContent%22%3Afalse%2C%22withVoice%22%3Afalse%7D&features=%7B%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Afalse%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22responsive_web_media_download_video_enabled%22%3Afalse%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D`;
+    const variables = {
+      tweetId,
+      withCommunity: false,
+      includePromotedContent: false,
+      withVoice: false,
+    };
+
+    const url = `https://api.twitter.com/graphql/${GRAPHQL_QUERY_ID}/TweetResultByRestId?variables=${encodeURIComponent(JSON.stringify(variables))}&features=${encodeURIComponent(JSON.stringify(GRAPHQL_FEATURES))}`;
 
     const response = await fetch(url, {
       headers: {
@@ -64,113 +174,35 @@ class TwitterVideoDownloader {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch tweet data");
+      throw new Error(`Failed to fetch tweet data: ${response.status}`);
     }
 
     return await response.json();
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Twitter API response has complex dynamic structure
-  private extractMediaInfo(tweetData: any): MediaInfo[] {
-    const mediaList: MediaInfo[] = [];
-
-
-    try {
-      // Check if tweet exists and is accessible
-      if (!tweetData.data?.tweetResult?.result) {
-        throw new Error("Tweet data not available");
-      }
-
-      const result = tweetData.data.tweetResult.result;
-      
-      // Handle different response types
-      if (result.__typename === "TweetTombstone") {
-        throw new Error("Tweet is not available (deleted, protected, or restricted)");
-      }
-      
-      if (result.__typename === "TweetWithVisibilityResults") {
-        // Handle tweets with visibility restrictions
-        if (result.tweet?.legacy?.entities?.media) {
-          const media = result.tweet.legacy.entities.media;
-        } else {
-          throw new Error("No media found in restricted tweet");
-        }
-      }
-
-      // Try different paths where media might be located
-      const media = result.legacy?.entities?.media || 
-                   result.tweet?.legacy?.entities?.media ||
-                   result.core?.user_results?.result?.legacy?.entities?.media;
-
-      if (!media || !Array.isArray(media)) {
-        throw new Error("No media found in tweet");
-      }
-
-      for (const item of media) {
-        if (item.type === "video" || item.type === "animated_gif") {
-          const videoInfo = item.video_info;
-
-          // m3u8形式（HLSストリーム）を探す
-          const m3u8Variant = videoInfo.variants.find(
-            (v: VideoVariant) => v.content_type === "application/x-mpegURL",
-          );
-
-          // MP4形式の動画を取得
-          const mp4Variants = videoInfo.variants
-            .filter((v: VideoVariant) => v.content_type === "video/mp4")
-            .sort((a: VideoVariant, b: VideoVariant) => {
-              const bitrateA = a.bitrate || 0;
-              const bitrateB = b.bitrate || 0;
-              return bitrateB - bitrateA;
-            });
-
-          if (m3u8Variant) {
-            // HLSストリームがある場合は、音声付きの可能性が高い
-            mediaList.push({
-              videoUrl: m3u8Variant.url,
-              quality: "HLS",
-            });
-          }
-
-          // MP4バリアントも追加
-          for (const variant of mp4Variants) {
-            mediaList.push({
-              videoUrl: variant.url,
-              quality: variant.bitrate ? `${variant.bitrate}` : "unknown",
-            });
-          }
-        }
-      }
-    } catch (_error) {
-      throw new Error("No video found in the tweet");
-    }
-
-    return mediaList;
-  }
-
   private async downloadWithHLS(hlsUrl: string, outputPath: string): Promise<void> {
+    validateVideoUrl(hlsUrl);
     console.log("Downloading HLS stream with FFmpeg...");
 
     const tempMp4 = `${outputPath}.temp.mp4`;
 
-    // FFmpegでHLSストリームをダウンロードし、適切にエンコード
     const ffmpegCommand = new Deno.Command("ffmpeg", {
       args: [
         "-i",
         hlsUrl,
         "-c:v",
-        "libx264", // H.264ビデオコーデック
+        "libx264",
         "-c:a",
-        "aac", // AAC音声コーデック
+        "aac",
         "-preset",
-        "medium", // エンコード速度と品質のバランス
+        "medium",
         "-crf",
-        "23", // 品質設定（0-51、低いほど高品質）
+        "23",
         "-movflags",
-        "+faststart", // Web再生用の最適化
+        "+faststart",
         "-pix_fmt",
-        "yuv420p", // 互換性のあるピクセルフォーマット
-        "-y", // 上書き確認なし
+        "yuv420p",
+        "-y",
         tempMp4,
       ],
       stdout: "piped",
@@ -179,7 +211,6 @@ class TwitterVideoDownloader {
 
     const process = ffmpegCommand.spawn();
 
-    // エラー出力を監視
     const decoder = new TextDecoder();
     for await (const chunk of process.stderr) {
       const text = decoder.decode(chunk);
@@ -194,24 +225,23 @@ class TwitterVideoDownloader {
       throw new Error("FFmpeg failed to download HLS stream");
     }
 
-    // 一時ファイルを最終ファイルに移動
     await Deno.rename(tempMp4, outputPath);
     console.log(`Downloaded and converted to: ${outputPath}`);
   }
 
   private async downloadMP4(videoUrl: string, outputPath: string): Promise<void> {
+    validateVideoUrl(videoUrl);
     console.log(`Downloading MP4 from: ${videoUrl}`);
 
     const response = await fetch(videoUrl);
     if (!response.ok) {
-      throw new Error("Failed to download video");
+      throw new Error(`Failed to download video: ${response.status}`);
     }
 
     const data = await response.arrayBuffer();
     const tempFile = `${outputPath}.temp`;
     await Deno.writeFile(tempFile, new Uint8Array(data));
 
-    // FFmpegで再エンコード（音声トラックの修正と最初のフレームの問題を解決）
     console.log("Re-encoding video with FFmpeg...");
 
     const ffmpegCommand = new Deno.Command("ffmpeg", {
@@ -238,11 +268,14 @@ class TwitterVideoDownloader {
     });
 
     const process = ffmpegCommand.spawn();
-    await process.status;
+    const { success } = await process.status;
 
-    // 一時ファイルを削除
+    if (!success) {
+      await Deno.remove(tempFile).catch(() => {});
+      throw new Error("FFmpeg failed to re-encode video");
+    }
+
     await Deno.remove(tempFile);
-
     console.log(`Downloaded and re-encoded to: ${outputPath}`);
   }
 
@@ -263,7 +296,6 @@ class TwitterVideoDownloader {
 
   public async download(tweetUrl: string, outputPath?: string): Promise<void> {
     try {
-      // FFmpegの存在確認
       const hasFFmpeg = await this.checkFFmpeg();
       if (!hasFFmpeg) {
         console.error("Error: FFmpeg is not installed. Please install FFmpeg first.");
@@ -274,38 +306,37 @@ class TwitterVideoDownloader {
       }
 
       console.log("Extracting tweet ID...");
-      const tweetId = this.extractTweetId(tweetUrl);
+      const tweetId = extractTweetId(tweetUrl);
 
       console.log("Fetching tweet data...");
       const tweetData = await this.getTweetData(tweetId);
 
       console.log("Extracting media info...");
-      const mediaList = this.extractMediaInfo(tweetData);
+      const mediaList = extractMediaInfo(tweetData);
 
       if (mediaList.length === 0) {
         throw new Error("No videos found in the tweet");
       }
 
       console.log(`Found ${mediaList.length} media options:`);
-      mediaList.forEach((media, index) => {
+      for (const [index, media] of mediaList.entries()) {
         console.log(`  ${index + 1}. Quality: ${media.quality}`);
-      });
+      }
 
-      const filename = outputPath || `twitter_video_${tweetId}.mp4`;
+      const filename = sanitizeOutputPath(outputPath, tweetId);
 
-      // HLSストリームを優先（音声付きの可能性が高い）
       const hlsMedia = mediaList.find((m) => m.quality === "HLS");
       if (hlsMedia) {
         await this.downloadWithHLS(hlsMedia.videoUrl, filename);
       } else {
-        // HLSがない場合は最高品質のMP4をダウンロード
         const selectedMedia = mediaList[0];
         await this.downloadMP4(selectedMedia.videoUrl, filename);
       }
 
       console.log("Download completed successfully!");
     } catch (error) {
-      console.error("Error:", error.message);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error(`Error: ${message}`);
       Deno.exit(1);
     }
   }
@@ -317,10 +348,10 @@ if (import.meta.main) {
 
   if (args.length < 1) {
     console.log(
-      "Usage: deno run --allow-net --allow-write --allow-read --allow-run twitter-video-downloader.ts <tweet-url> [output-file]",
+      "Usage: deno run --allow-net --allow-write --allow-read --allow-run --allow-env twitter-movie-downloader.ts <tweet-url> [output-file]",
     );
     console.log(
-      "Example: deno run --allow-net --allow-write --allow-read --allow-run twitter-video-downloader.ts https://twitter.com/user/status/123456789 video.mp4",
+      "Example: deno run --allow-net --allow-write --allow-read --allow-run --allow-env twitter-movie-downloader.ts https://x.com/user/status/123456789 video.mp4",
     );
     Deno.exit(1);
   }

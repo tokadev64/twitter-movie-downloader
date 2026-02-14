@@ -14,9 +14,6 @@
     "fd@9",
     "bat@0.24",
     "eza@0.18",
-    "nmap@7",
-    "tcpdump@4",
-    "wireshark@4"
   ],
   "env": {
     "DENO_DIR": "$DEVBOX_PROJECT_ROOT/.deno",
@@ -55,7 +52,7 @@
       "}"
     ],
     "scripts": {
-      "tw": "deno run --allow-net --allow-write --allow-read --allow-run twitter-video-downloader.ts",
+      "tw": "deno run --allow-net --allow-write --allow-read --allow-run --allow-env twitter-movie-downloader.ts",
       "test": "deno test --allow-net",
       "lint": "biome check",
       "format": "biome check --write",
