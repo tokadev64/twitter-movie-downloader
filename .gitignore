@@ -4,3 +4,5 @@
 .biome/
 *.temp
 *.temp.mp4
+dist/
+node_modules/

@@ -1,133 +1,17 @@
-#!/usr/bin/env -S deno run --allow-net --allow-write --allow-read --allow-run --allow-env
-
-import { basename } from "jsr:@std/path";
-
-interface VideoVariant {
-  bitrate?: number;
-  content_type: string;
-  url: string;
-}
-
-export interface MediaInfo {
-  videoUrl: string;
-  quality: string;
-}
-
-const GRAPHQL_QUERY_ID = "2ICDjqPd81tulZcYrtpTuQ";
+import {
+  buildGraphqlUrl,
+  extractMediaInfo,
+  extractTweetId,
+  sanitizeOutputPath,
+  validateVideoUrl,
+} from "@tmd/shared";
 
 // Twitter ウェブクライアントの公開 Bearer Token
 // セキュリティ上、環境変数での上書きを推奨
 const DEFAULT_BEARER_TOKEN =
   "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 
-const GRAPHQL_FEATURES = {
-  creator_subscriptions_tweet_preview_api_enabled: true,
-  tweetypie_unmention_optimization_enabled: true,
-  responsive_web_edit_tweet_api_enabled: true,
-  graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-  view_counts_everywhere_api_enabled: true,
-  longform_notetweets_consumption_enabled: true,
-  responsive_web_twitter_article_tweet_consumption_enabled: false,
-  tweet_awards_web_tipping_enabled: false,
-  freedom_of_speech_not_reach_fetch_enabled: true,
-  standardized_nudges_misinfo: true,
-  tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
-  longform_notetweets_rich_text_read_enabled: true,
-  longform_notetweets_inline_media_enabled: true,
-  responsive_web_graphql_exclude_directive_enabled: true,
-  verified_phone_label_enabled: false,
-  responsive_web_media_download_video_enabled: false,
-  responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-  responsive_web_graphql_timeline_navigation_enabled: true,
-  responsive_web_enhance_cards_enabled: false,
-};
-
-export function extractTweetId(url: string): string {
-  const trimmed = url.trim();
-
-  // 数字のみの場合は直接 tweet ID として扱う
-  if (/^\d+$/.test(trimmed)) {
-    return trimmed;
-  }
-
-  const pattern = /(?:mobile\.)?(?:twitter|x)\.com\/\w+\/status\/(\d+)/;
-  const match = trimmed.match(pattern);
-  if (match) return match[1];
-
-  throw new Error("Invalid Twitter/X URL");
-}
-
-// biome-ignore lint/suspicious/noExplicitAny: Twitter API response has complex dynamic structure
-export function extractMediaInfo(tweetData: any): MediaInfo[] {
-  if (!tweetData.data?.tweetResult?.result) {
-    throw new Error("Tweet data not available");
-  }
-
-  const result = tweetData.data.tweetResult.result;
-
-  if (result.__typename === "TweetTombstone") {
-    throw new Error("Tweet is not available (deleted, protected, or restricted)");
-  }
-
-  // Standard tweets: result.legacy.entities.media
-  // Visibility-restricted tweets: result.tweet.legacy.entities.media
-  const media = result.legacy?.entities?.media || result.tweet?.legacy?.entities?.media;
-
-  if (!media || !Array.isArray(media)) {
-    throw new Error("No media found in tweet");
-  }
-
-  const mediaList: MediaInfo[] = [];
-
-  for (const item of media) {
-    if (item.type === "video" || item.type === "animated_gif") {
-      const videoInfo = item.video_info;
-
-      const m3u8Variant = videoInfo.variants.find(
-        (v: VideoVariant) => v.content_type === "application/x-mpegURL",
-      );
-
-      const mp4Variants = videoInfo.variants
-        .filter((v: VideoVariant) => v.content_type === "video/mp4")
-        .sort((a: VideoVariant, b: VideoVariant) => {
-          const bitrateA = a.bitrate || 0;
-          const bitrateB = b.bitrate || 0;
-          return bitrateB - bitrateA;
-        });
-
-      if (m3u8Variant) {
-        mediaList.push({
-          videoUrl: m3u8Variant.url,
-          quality: "HLS",
-        });
-      }
-
-      for (const variant of mp4Variants) {
-        mediaList.push({
-          videoUrl: variant.url,
-          quality: variant.bitrate ? `${variant.bitrate}` : "unknown",
-        });
-      }
-    }
-  }
-
-  return mediaList;
-}
-
-export function sanitizeOutputPath(outputPath: string | undefined, tweetId: string): string {
-  if (!outputPath) {
-    return `twitter_video_${tweetId}.mp4`;
-  }
-  return basename(outputPath);
-}
-
-function validateVideoUrl(url: string): void {
-  if (!url.startsWith("https://")) {
-    throw new Error("Invalid video URL: HTTPS required");
-  }
-}
-
-class TwitterVideoDownloader {
+export class TwitterVideoDownloader {
   private guestToken?: string;
   private readonly bearerToken: string;
 
@@ -157,14 +41,7 @@ class TwitterVideoDownloader {
       this.guestToken = await this.getGuestToken();
     }
 
-    const variables = {
-      tweetId,
-      withCommunity: false,
-      includePromotedContent: false,
-      withVoice: false,
-    };
-
-    const url = `https://api.twitter.com/graphql/${GRAPHQL_QUERY_ID}/TweetResultByRestId?variables=${encodeURIComponent(JSON.stringify(variables))}&features=${encodeURIComponent(JSON.stringify(GRAPHQL_FEATURES))}`;
+    const url = buildGraphqlUrl(tweetId);
 
     const response = await fetch(url, {
       headers: {
@@ -340,25 +217,4 @@ class TwitterVideoDownloader {
       Deno.exit(1);
     }
   }
-}
-
-// CLI実行
-if (import.meta.main) {
-  const args = Deno.args;
-
-  if (args.length < 1) {
-    console.log(
-      "Usage: deno run --allow-net --allow-write --allow-read --allow-run --allow-env twitter-movie-downloader.ts <tweet-url> [output-file]",
-    );
-    console.log(
-      "Example: deno run --allow-net --allow-write --allow-read --allow-run --allow-env twitter-movie-downloader.ts https://x.com/user/status/123456789 video.mp4",
-    );
-    Deno.exit(1);
-  }
-
-  const tweetUrl = args[0];
-  const outputFile = args[1];
-
-  const downloader = new TwitterVideoDownloader();
-  await downloader.download(tweetUrl, outputFile);
 }

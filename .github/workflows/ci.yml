@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Lint (Biome)
+        run: deno run -A npm:@biomejs/biome check packages/
+
+      - name: Type check
+        run: |
+          deno check packages/shared/mod.ts
+          deno check packages/cli/mod.ts
+          deno check packages/api/mod.ts
+
+      - name: Test
+        run: deno test --allow-net --allow-env packages/
