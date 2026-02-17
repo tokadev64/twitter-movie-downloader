@@ -22,11 +22,7 @@ Deno.test("validateFormat: throws on invalid format", () => {
 });
 
 Deno.test("validateFormat: throws on empty string", () => {
-  assertThrows(
-    () => validateFormat(""),
-    Error,
-    'Invalid format: "". Supported formats: mp4, mov',
-  );
+  assertThrows(() => validateFormat(""), Error, 'Invalid format: "". Supported formats: mp4, mov');
 });
 
 Deno.test("validateFormat: case-sensitive — rejects uppercase", () => {
