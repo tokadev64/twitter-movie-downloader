@@ -1,8 +1,16 @@
-import { basename } from "jsr:@std/path";
+import { basename, extname } from "jsr:@std/path";
+import type { VideoFormat } from "./types.ts";
 
-export function sanitizeOutputPath(outputPath: string | undefined, tweetId: string): string {
+export function sanitizeOutputPath(
+  outputPath: string | undefined,
+  tweetId: string,
+  format: VideoFormat = "mp4",
+): string {
   if (!outputPath) {
-    return `twitter_video_${tweetId}.mp4`;
+    return `twitter_video_${tweetId}.${format}`;
   }
-  return basename(outputPath);
+  const safe = basename(outputPath);
+  const ext = extname(safe);
+  const stem = ext ? safe.slice(0, -ext.length) : safe;
+  return `${stem}.${format}`;
 }
