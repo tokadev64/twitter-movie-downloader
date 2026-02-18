@@ -1,0 +1,22 @@
+name: Deploy API to Deno Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/api/**"
+      - "packages/shared/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/deployctl@v1
+        with:
+          project: twitter-movie-downloader-api
+          entrypoint: packages/api/mod.ts

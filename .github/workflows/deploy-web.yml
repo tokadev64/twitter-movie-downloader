@@ -28,6 +28,8 @@ jobs:
 
       - name: Build WebUI
         run: cd packages/web && deno task build
+        env:
+          VITE_API_BASE_URL: https://twitter-movie-downloader-api.deno.dev
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
