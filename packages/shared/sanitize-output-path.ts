@@ -10,6 +10,9 @@ export function sanitizeOutputPath(
     return `twitter_video_${tweetId}.${format}`;
   }
   const safe = basename(outputPath);
+  if (!safe || safe === "/" || safe === "\\") {
+    return `twitter_video_${tweetId}.${format}`;
+  }
   const ext = extname(safe);
   const stem = ext ? safe.slice(0, -ext.length) : safe;
   return `${stem}.${format}`;

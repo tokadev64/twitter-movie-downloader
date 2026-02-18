@@ -25,6 +25,8 @@ export function extractMediaInfo(tweetData: any): MediaInfo[] {
   for (const item of media) {
     if (item.type === "video" || item.type === "animated_gif") {
       const videoInfo = item.video_info;
+      const rawThumbnail = item.media_url_https as string | undefined;
+      const thumbnailUrl = rawThumbnail?.startsWith("https://") ? rawThumbnail : undefined;
 
       const m3u8Variant = videoInfo.variants.find(
         (v: VideoVariant) => v.content_type === "application/x-mpegURL",
@@ -42,6 +44,7 @@ export function extractMediaInfo(tweetData: any): MediaInfo[] {
         mediaList.push({
           videoUrl: m3u8Variant.url,
           quality: "HLS",
+          thumbnailUrl,
         });
       }
 
@@ -49,6 +52,7 @@ export function extractMediaInfo(tweetData: any): MediaInfo[] {
         mediaList.push({
           videoUrl: variant.url,
           quality: variant.bitrate ? `${variant.bitrate}` : "unknown",
+          thumbnailUrl,
         });
       }
     }
