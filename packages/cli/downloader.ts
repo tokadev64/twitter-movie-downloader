@@ -3,6 +3,7 @@ import {
   extractMediaInfo,
   extractTweetId,
   sanitizeOutputPath,
+  type VideoFormat,
   validateVideoUrl,
 } from "@tmd/shared";
 
@@ -156,6 +157,24 @@ export class TwitterVideoDownloader {
     console.log(`Downloaded and re-encoded to: ${outputPath}`);
   }
 
+  private async remuxToMov(mp4Path: string, movPath: string): Promise<void> {
+    console.log("Remuxing to MOV container...");
+
+    const cmd = new Deno.Command("ffmpeg", {
+      args: ["-i", mp4Path, "-c", "copy", "-f", "mov", "-y", movPath],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const { success } = await cmd.output();
+
+    if (!success) {
+      throw new Error("FFmpeg failed to remux to MOV");
+    }
+
+    await Deno.remove(mp4Path);
+    console.log(`Remuxed to: ${movPath}`);
+  }
+
   private async checkFFmpeg(): Promise<boolean> {
     try {
       const command = new Deno.Command("ffmpeg", {
@@ -171,7 +190,11 @@ export class TwitterVideoDownloader {
     }
   }
 
-  public async download(tweetUrl: string, outputPath?: string): Promise<void> {
+  public async download(
+    tweetUrl: string,
+    outputPath?: string,
+    format: VideoFormat = "mp4",
+  ): Promise<void> {
     try {
       const hasFFmpeg = await this.checkFFmpeg();
       if (!hasFFmpeg) {
@@ -200,14 +223,26 @@ export class TwitterVideoDownloader {
         console.log(`  ${index + 1}. Quality: ${media.quality}`);
       }
 
-      const filename = sanitizeOutputPath(outputPath, tweetId);
+      const filename = sanitizeOutputPath(outputPath, tweetId, format);
 
       const hlsMedia = mediaList.find((m) => m.quality === "HLS");
-      if (hlsMedia) {
-        await this.downloadWithHLS(hlsMedia.videoUrl, filename);
+      if (format === "mov") {
+        // MOV: まず mp4 としてダウンロード → remux
+        const tempMp4 = `${filename}.temp.mp4`;
+        if (hlsMedia) {
+          await this.downloadWithHLS(hlsMedia.videoUrl, tempMp4);
+        } else {
+          const selectedMedia = mediaList[0];
+          await this.downloadMP4(selectedMedia.videoUrl, tempMp4);
+        }
+        await this.remuxToMov(tempMp4, filename);
       } else {
-        const selectedMedia = mediaList[0];
-        await this.downloadMP4(selectedMedia.videoUrl, filename);
+        if (hlsMedia) {
+          await this.downloadWithHLS(hlsMedia.videoUrl, filename);
+        } else {
+          const selectedMedia = mediaList[0];
+          await this.downloadMP4(selectedMedia.videoUrl, filename);
+        }
       }
 
       console.log("Download completed successfully!");

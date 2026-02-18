@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
-import { extractMediaInfo } from "../extract-media-info.ts";
+import { extractMediaInfo } from "./extract-media-info.ts";
 
 function makeTweetData(
   media: unknown[],
