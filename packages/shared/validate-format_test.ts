@@ -9,19 +9,11 @@ Deno.test("validateFormat: accepts 'mp4'", () => {
 });
 
 Deno.test("validateFormat: throws on 'mov' (removed format)", () => {
-  assertThrows(
-    () => validateFormat("mov"),
-    Error,
-    'Invalid format: "mov". Supported formats: mp4',
-  );
+  assertThrows(() => validateFormat("mov"), Error, 'Invalid format: "mov". Supported formats: mp4');
 });
 
 Deno.test("validateFormat: throws on invalid format", () => {
-  assertThrows(
-    () => validateFormat("avi"),
-    Error,
-    'Invalid format: "avi". Supported formats: mp4',
-  );
+  assertThrows(() => validateFormat("avi"), Error, 'Invalid format: "avi". Supported formats: mp4');
 });
 
 Deno.test("validateFormat: throws on empty string", () => {
