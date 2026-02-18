@@ -48,6 +48,10 @@ Deno.test("sanitizeOutputPath: preserves filename without extension when format 
   assertEquals(sanitizeOutputPath("video_no_ext", "123456", "mov"), "video_no_ext.mov");
 });
 
+Deno.test("sanitizeOutputPath: root path '/' falls back to default", () => {
+  assertEquals(sanitizeOutputPath("/", "123456"), "twitter_video_123456.mp4");
+});
+
 // --- PBT ---
 
 const digitIdArb = fc.string({

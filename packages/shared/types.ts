@@ -7,6 +7,7 @@ export interface VideoVariant {
 export interface MediaInfo {
   videoUrl: string;
   quality: string;
+  thumbnailUrl?: string;
 }
 
 export interface TweetInfoResponse {

@@ -37,21 +37,30 @@ function downloadUrl(media: MediaInfo, index: number): string {
 <template>
   <div v-if="mediaList.length > 0" class="video-result-list">
     <h2>Found {{ mediaList.length }} video(s) for tweet {{ tweetId }}</h2>
-    <ul class="media-list">
-      <li v-for="(media, index) in mediaList" :key="index" class="media-item">
-        <span class="quality-badge">{{ formatQuality(media.quality) }}</span>
-        <div class="download-controls">
-          <select
-            class="format-select"
-            :value="getFormat(index)"
-            @change="setFormat(index, ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="mp4">MP4</option>
-            <option value="mov">MOV</option>
-          </select>
-          <a :href="downloadUrl(media, index)" class="download-link">
-            Download
-          </a>
+    <ul class="media-grid">
+      <li v-for="(media, index) in mediaList" :key="index" class="media-card">
+        <img
+          v-if="media.thumbnailUrl"
+          :src="media.thumbnailUrl"
+          alt="Tweet video thumbnail"
+          class="media-thumbnail"
+          loading="lazy"
+        />
+        <div class="media-info">
+          <span class="quality-badge">{{ formatQuality(media.quality) }}</span>
+          <div class="download-controls">
+            <select
+              class="format-select"
+              :value="getFormat(index)"
+              @change="setFormat(index, ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="mp4">MP4</option>
+              <option value="mov">MOV</option>
+            </select>
+            <a :href="downloadUrl(media, index)" class="download-link">
+              Download
+            </a>
+          </div>
         </div>
       </li>
     </ul>
@@ -69,22 +78,33 @@ function downloadUrl(media: MediaInfo, index: number): string {
   color: #333;
 }
 
-.media-list {
+.media-grid {
   list-style: none;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
 }
 
-.media-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
+.media-card {
   background: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.media-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.media-info {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .quality-badge {
