@@ -7,7 +7,8 @@ export async function handleTweetInfo(c: Context): Promise<Response> {
   try {
     const tweetId = c.req.param("id");
     const validatedId = extractTweetId(tweetId);
-    const mediaList = await fetchTweetMedia(validatedId);
+    const allMedia = await fetchTweetMedia(validatedId);
+    const mediaList = allMedia.filter((m) => m.quality !== "HLS");
 
     const body: TweetInfoResponse = {
       tweetId: validatedId,
