@@ -1,0 +1,6 @@
+.env
+.env.local
+.deno/
+.biome/
+*.temp
+*.temp.mp4
