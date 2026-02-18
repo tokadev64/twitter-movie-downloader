@@ -1,7 +1,7 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
 import fc from "npm:fast-check";
-import type { VideoFormat } from "../types.ts";
-import { validateFormat } from "../validate-format.ts";
+import type { VideoFormat } from "./types.ts";
+import { validateFormat } from "./validate-format.ts";
 
 // --- Unit Tests ---
 

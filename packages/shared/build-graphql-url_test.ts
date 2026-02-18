@@ -1,7 +1,7 @@
 import { assertEquals, assertStringIncludes } from "jsr:@std/assert";
 import fc from "npm:fast-check";
-import { buildGraphqlUrl } from "../build-graphql-url.ts";
-import { GRAPHQL_QUERY_ID } from "../consts.ts";
+import { buildGraphqlUrl } from "./build-graphql-url.ts";
+import { GRAPHQL_QUERY_ID } from "./consts.ts";
 
 Deno.test("buildGraphqlUrl: contains GraphQL query ID", () => {
   const url = buildGraphqlUrl("123456789");

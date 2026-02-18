@@ -1,6 +1,6 @@
 import { assertEquals } from "jsr:@std/assert";
 import fc from "npm:fast-check";
-import { sanitizeOutputPath } from "../sanitize-output-path.ts";
+import { sanitizeOutputPath } from "./sanitize-output-path.ts";
 
 Deno.test("sanitizeOutputPath: default filename when undefined", () => {
   assertEquals(sanitizeOutputPath(undefined, "123456"), "twitter_video_123456.mp4");

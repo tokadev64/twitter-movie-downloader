@@ -1,5 +1,5 @@
 import { assertRejects } from "jsr:@std/assert";
-import { fetchTweetMedia, resetGuestTokenCache } from "../twitter-client.ts";
+import { fetchTweetMedia, resetGuestTokenCache } from "./twitter-client.ts";
 
 Deno.test("fetchTweetMedia: throws without TWITTER_BEARER_TOKEN", async () => {
   resetGuestTokenCache();
