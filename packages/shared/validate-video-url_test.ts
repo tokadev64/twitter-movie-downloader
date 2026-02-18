@@ -1,6 +1,6 @@
 import { assertThrows } from "jsr:@std/assert";
 import fc from "npm:fast-check";
-import { validateVideoUrl } from "../validate-video-url.ts";
+import { validateVideoUrl } from "./validate-video-url.ts";
 
 Deno.test("validateVideoUrl: accepts valid HTTPS URL", () => {
   validateVideoUrl("https://video.twimg.com/ext_tw_video/123/pu/vid/720x1280/abc.mp4");

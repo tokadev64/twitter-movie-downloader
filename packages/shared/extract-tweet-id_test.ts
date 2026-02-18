@@ -1,6 +1,6 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
 import fc from "npm:fast-check";
-import { extractTweetId } from "../extract-tweet-id.ts";
+import { extractTweetId } from "./extract-tweet-id.ts";
 
 Deno.test("extractTweetId: twitter.com URL", () => {
   assertEquals(extractTweetId("https://twitter.com/user/status/123456789"), "123456789");

@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert";
 import { Hono } from "hono";
-import { handleHealth } from "../handlers/health.ts";
-import { handleTweetInfo } from "../handlers/tweet-info.ts";
+import { handleHealth } from "./health.ts";
+import { handleTweetInfo } from "./tweet-info.ts";
 
 function createApp(): Hono {
   const app = new Hono();

@@ -18,3 +18,5 @@ export interface ApiErrorResponse {
   error: string;
   code: string;
 }
+
+export type VideoFormat = "mp4" | "mov";

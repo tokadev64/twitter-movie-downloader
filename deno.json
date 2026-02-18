@@ -6,7 +6,7 @@
     "test:shared": "deno test packages/shared/",
     "test:api": "deno test --allow-net --allow-env packages/api/",
     "tw": "deno run --allow-net --allow-write --allow-read --allow-run --allow-env packages/cli/mod.ts",
-    "dev:api": "deno run --allow-net --allow-env --watch packages/api/mod.ts",
+    "dev:api": "deno run --allow-net --allow-env --allow-run --allow-read --allow-write --watch packages/api/mod.ts",
     "dev:web": "cd packages/web && deno task dev",
     "build:web": "cd packages/web && deno task build",
     "lint": "deno run -A npm:@biomejs/biome check",

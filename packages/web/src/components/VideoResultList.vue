@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import type { MediaInfo } from "@tmd/shared";
+import type { MediaInfo, VideoFormat } from "@tmd/shared";
+import { reactive } from "vue";
 
-defineProps<{
+const props = defineProps<{
   mediaList: MediaInfo[];
   tweetId: string;
 }>();
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+const formats: Record<number, VideoFormat> = reactive({});
+
+function getFormat(index: number): VideoFormat {
+  return formats[index] ?? "mp4";
+}
+
+function setFormat(index: number, value: string): void {
+  formats[index] = value as VideoFormat;
+}
 
 function formatQuality(quality: string): string {
   if (quality === "HLS") return "HLS (Highest Quality)";
@@ -14,6 +27,11 @@ function formatQuality(quality: string): string {
   if (bitrate >= 1000) return `${(bitrate / 1000).toFixed(0)} Kbps`;
   return `${quality} bps`;
 }
+
+function downloadUrl(media: MediaInfo, index: number): string {
+  const format = getFormat(index);
+  return `${API_BASE_URL}/api/tweet/${props.tweetId}/download?quality=${encodeURIComponent(media.quality)}&format=${format}`;
+}
 </script>
 
 <template>
@@ -22,9 +40,19 @@ function formatQuality(quality: string): string {
     <ul class="media-list">
       <li v-for="(media, index) in mediaList" :key="index" class="media-item">
         <span class="quality-badge">{{ formatQuality(media.quality) }}</span>
-        <a :href="media.videoUrl" target="_blank" rel="noopener noreferrer" class="download-link">
-          Download
-        </a>
+        <div class="download-controls">
+          <select
+            class="format-select"
+            :value="getFormat(index)"
+            @change="setFormat(index, ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="mp4">MP4</option>
+            <option value="mov">MOV</option>
+          </select>
+          <a :href="downloadUrl(media, index)" class="download-link">
+            Download
+          </a>
+        </div>
       </li>
     </ul>
   </div>
@@ -62,6 +90,21 @@ function formatQuality(quality: string): string {
 .quality-badge {
   font-weight: 600;
   color: #495057;
+}
+
+.download-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.format-select {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 .download-link {
