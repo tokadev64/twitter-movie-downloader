@@ -1,49 +1,5 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
-import {
-  extractMediaInfo,
-  extractTweetId,
-  sanitizeOutputPath,
-} from "./twitter-movie-downloader.ts";
-
-// --- extractTweetId ---
-
-Deno.test("extractTweetId: twitter.com URL", () => {
-  assertEquals(extractTweetId("https://twitter.com/user/status/123456789"), "123456789");
-});
-
-Deno.test("extractTweetId: x.com URL", () => {
-  assertEquals(extractTweetId("https://x.com/user/status/987654321"), "987654321");
-});
-
-Deno.test("extractTweetId: mobile.twitter.com URL", () => {
-  assertEquals(extractTweetId("https://mobile.twitter.com/user/status/111222333"), "111222333");
-});
-
-Deno.test("extractTweetId: URL with query parameters", () => {
-  assertEquals(extractTweetId("https://x.com/user/status/123456789?s=20&t=abc"), "123456789");
-});
-
-Deno.test("extractTweetId: direct tweet ID", () => {
-  assertEquals(extractTweetId("123456789"), "123456789");
-});
-
-Deno.test("extractTweetId: direct tweet ID with whitespace", () => {
-  assertEquals(extractTweetId("  123456789  "), "123456789");
-});
-
-Deno.test("extractTweetId: throws on invalid URL", () => {
-  assertThrows(() => extractTweetId("https://example.com/invalid"), Error, "Invalid Twitter/X URL");
-});
-
-Deno.test("extractTweetId: throws on empty string", () => {
-  assertThrows(() => extractTweetId(""), Error, "Invalid Twitter/X URL");
-});
-
-Deno.test("extractTweetId: throws on t.co short URL (not supported)", () => {
-  assertThrows(() => extractTweetId("https://t.co/abc123"), Error, "Invalid Twitter/X URL");
-});
-
-// --- extractMediaInfo ---
+import { extractMediaInfo } from "../extract-media-info.ts";
 
 function makeTweetData(
   media: unknown[],
@@ -171,26 +127,4 @@ Deno.test("extractMediaInfo: MP4 sorted by bitrate descending", () => {
   assertEquals(result[0].quality, "2176000");
   assertEquals(result[1].quality, "832000");
   assertEquals(result[2].quality, "256000");
-});
-
-// --- sanitizeOutputPath ---
-
-Deno.test("sanitizeOutputPath: default filename when undefined", () => {
-  assertEquals(sanitizeOutputPath(undefined, "123456"), "twitter_video_123456.mp4");
-});
-
-Deno.test("sanitizeOutputPath: preserves simple filename", () => {
-  assertEquals(sanitizeOutputPath("my_video.mp4", "123456"), "my_video.mp4");
-});
-
-Deno.test("sanitizeOutputPath: prevents path traversal with ../", () => {
-  assertEquals(sanitizeOutputPath("../../etc/passwd", "123456"), "passwd");
-});
-
-Deno.test("sanitizeOutputPath: prevents absolute path", () => {
-  assertEquals(sanitizeOutputPath("/tmp/evil.mp4", "123456"), "evil.mp4");
-});
-
-Deno.test("sanitizeOutputPath: handles nested path traversal", () => {
-  assertEquals(sanitizeOutputPath("../../../tmp/malicious.mp4", "123456"), "malicious.mp4");
 });

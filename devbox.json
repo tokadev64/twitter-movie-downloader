@@ -23,7 +23,10 @@
   },
   "shell": {
     "init_hook": [
-      "# プロジェクトバイナリディレクトリの作成",
+      "# Load .env if exists",
+      "if [ -f \"$DEVBOX_PROJECT_ROOT/.env\" ]; then set -a && source \"$DEVBOX_PROJECT_ROOT/.env\" && set +a; fi",
+      "",
+      "# Create project binary directory",
       "mkdir -p $DEVBOX_PROJECT_ROOT/bin",
       "",
       "# Welcome message",
@@ -33,37 +36,37 @@
       "echo \"FFmpeg: $(ffmpeg -version | head -n1)\"",
       "echo \"\"",
       "",
-      "# エイリアスの設定",
+      "# Aliases",
       "alias tw='deno task tw'",
       "alias ll='eza -la --icons'",
       "alias cat='bat --style=numbers'",
       "alias find='fd'",
       "alias grep='rg'",
       "",
-      "# Biomeのグローバルインストール（初回のみ）",
+      "# Install Biome globally (first time only)",
       "if ! command -v biome &> /dev/null; then",
       "    deno install --allow-env --allow-read --allow-sys --global npm:@biomejs/biome",
       "fi",
       "",
-      "# 開発サーバー用ポートの確認",
-      "function check-ports() {",
-      "    echo \"📡 ポート使用状況:\"",
-      "    lsof -i :8000 -i :3000 -i :5173 2>/dev/null || echo \"  全ポート利用可能\"",
+      "# Check dev server ports",
+      "function check_ports() {",
+      "    echo 'Port status:'",
+      "    lsof -i :8000 -i :3000 -i :5173 2>/dev/null || echo '  All ports available'",
       "}"
     ],
     "scripts": {
-      "tw": "deno run --allow-net --allow-write --allow-read --allow-run --allow-env twitter-movie-downloader.ts",
-      "test": "deno test --allow-net",
-      "lint": "biome check",
-      "format": "biome check --write",
-      "check": "biome check && deno check twitter-video-downloader.ts",
-      "clean": "rm -rf .deno .biome",
-      "setup": "deno cache twitter-video-downloader.ts",
-      "help": "echo '📝 利用可能なコマンド:' && echo '  devbox run tw <URL>  - 動画をダウンロード' && echo '  devbox run test     - テストを実行' && echo '  devbox run lint     - コードをチェック' && echo '  devbox run format   - コードを整形' && echo '  devbox run check    - 型チェックとlint' && echo '  devbox run clean    - キャッシュをクリア' && echo '  devbox run setup    - 依存関係をキャッシュ'"
+      "tw": "deno task tw",
+      "test": "deno task test",
+      "lint": "deno task lint",
+      "format": "deno task format",
+      "check": "deno task lint && deno check packages/shared/mod.ts packages/api/mod.ts packages/cli/mod.ts",
+      "dev:api": "deno task dev:api",
+      "dev:web": "deno task dev:web",
+      "build:web": "deno task build:web",
+      "clean": "rm -rf .deno .biome node_modules packages/web/node_modules packages/web/dist",
+      "setup": "deno install",
+      "help": "echo 'Available commands:' && echo '  devbox run tw <URL>     - Download video' && echo '  devbox run test         - Run tests' && echo '  devbox run lint         - Lint check' && echo '  devbox run format       - Format code' && echo '  devbox run check        - Type check + lint' && echo '  devbox run dev:api      - Start API server' && echo '  devbox run dev:web      - Start WebUI dev server' && echo '  devbox run build:web    - Build WebUI' && echo '  devbox run clean        - Clear caches' && echo '  devbox run setup        - Install dependencies'"
     }
   },
-  "include": [
-    "path:.envrc",
-    "path:biome.json"
-  ]
+  "include": []
 }
