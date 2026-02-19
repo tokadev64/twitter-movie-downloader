@@ -1,11 +1,13 @@
 name: Deploy WebUI to GitHub Pages
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "packages/web/**"
       - "packages/shared/**"
+      - ".github/workflows/deploy-web.yml"
 
 permissions:
   contents: read

@@ -1,11 +1,13 @@
 name: Deploy API to Deno Deploy
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "packages/api/**"
       - "packages/shared/**"
+      - ".github/workflows/deploy-api.yml"
 
 jobs:
   deploy:
