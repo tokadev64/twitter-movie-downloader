@@ -22,9 +22,9 @@ jobs:
           deno-version: v2.x
 
       - name: Install deployctl
-        run: deno install -Arf jsr:@deno/deployctl
+        run: deno install -Agrf jsr:@deno/deployctl
 
       - name: Deploy to Deno Deploy
-        run: deployctl deploy --project=twitter-movie-downloader-api --entrypoint=packages/api/mod.ts
+        run: deployctl deploy --project=tw-movie-downloader-api --entrypoint=packages/api/mod.ts
         env:
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
