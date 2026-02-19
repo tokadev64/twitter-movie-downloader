@@ -1,6 +1,11 @@
 {
   "nodeModulesDir": "auto",
-  "workspace": ["packages/shared", "packages/cli", "packages/api", "packages/web"],
+  "workspace": [
+    "packages/shared",
+    "packages/cli",
+    "packages/api",
+    "packages/web"
+  ],
   "tasks": {
     "test": "deno test --allow-net --allow-env",
     "test:shared": "deno test packages/shared/",
@@ -15,6 +20,16 @@
   },
   "compilerOptions": {
     "strict": true,
-    "lib": ["deno.window"]
+    "lib": [
+      "deno.window"
+    ]
+  },
+  "deploy": {
+    "project": "6a37d5fc-648b-4322-9529-12a50b2f1b94",
+    "exclude": [
+      "**/node_modules"
+    ],
+    "include": [],
+    "entrypoint": "packages/api/mod.ts"
   }
 }
