@@ -17,9 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: denoland/deployctl@v1
+      - uses: denoland/setup-deno@v2
         with:
-          project: twitter-movie-downloader-api
-          entrypoint: packages/api/mod.ts
+          deno-version: v2.x
+
+      - name: Install deployctl
+        run: deno install -Arf jsr:@deno/deployctl
+
+      - name: Deploy to Deno Deploy
+        run: deployctl deploy --project=twitter-movie-downloader-api --entrypoint=packages/api/mod.ts
         env:
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
