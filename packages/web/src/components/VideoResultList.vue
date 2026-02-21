@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MediaInfo } from "@tmd/shared";
+import { computed } from "vue";
 
 const props = defineProps<{
   mediaList: MediaInfo[];
@@ -53,8 +54,8 @@ function downloadUrl(media: MediaInfo): string {
   return `${API_BASE_URL}/api/tweet/${props.tweetId}/download?quality=${encodeURIComponent(media.quality)}`;
 }
 
-const thumbnail = props.mediaList[0]?.thumbnailUrl;
-const duration = formatDuration(props.mediaList[0]?.durationMs);
+const thumbnail = computed(() => props.mediaList[0]?.thumbnailUrl);
+const duration = computed(() => formatDuration(props.mediaList[0]?.durationMs));
 </script>
 
 <template>
@@ -78,6 +79,7 @@ const duration = formatDuration(props.mediaList[0]?.durationMs);
           <span v-if="formatCodec(media)" class="meta-tag codec">
             {{ formatCodec(media) }}
           </span>
+          <span class="meta-tag format">MP4</span>
           <span v-if="formatFileSize(media.fileSizeBytes)" class="meta-tag size">
             {{ formatFileSize(media.fileSizeBytes) }}
           </span>
