@@ -1,6 +1,6 @@
-import { assertThrows } from "jsr:@std/assert";
+import { assertEquals, assertThrows } from "jsr:@std/assert";
 import fc from "npm:fast-check";
-import { validateVideoUrl } from "./validate-video-url.ts";
+import { isAllowedVideoHost, validateVideoUrl } from "./validate-video-url.ts";
 
 Deno.test("validateVideoUrl: accepts valid HTTPS URL", () => {
   validateVideoUrl("https://video.twimg.com/ext_tw_video/123/pu/vid/720x1280/abc.mp4");
@@ -24,6 +24,24 @@ Deno.test("validateVideoUrl: throws on relative path", () => {
     Error,
     "Invalid video URL: HTTPS required",
   );
+});
+
+// --- isAllowedVideoHost ---
+
+Deno.test("isAllowedVideoHost: allows video.twimg.com", () => {
+  assertEquals(isAllowedVideoHost("https://video.twimg.com/ext_tw_video/123/vid.mp4"), true);
+});
+
+Deno.test("isAllowedVideoHost: allows pbs.twimg.com", () => {
+  assertEquals(isAllowedVideoHost("https://pbs.twimg.com/thumb.jpg"), true);
+});
+
+Deno.test("isAllowedVideoHost: rejects unknown host", () => {
+  assertEquals(isAllowedVideoHost("https://evil.com/video.mp4"), false);
+});
+
+Deno.test("isAllowedVideoHost: rejects invalid URL", () => {
+  assertEquals(isAllowedVideoHost("not-a-url"), false);
 });
 
 // --- PBT ---

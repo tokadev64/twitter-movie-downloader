@@ -8,6 +8,13 @@ export interface MediaInfo {
   videoUrl: string;
   quality: string;
   thumbnailUrl?: string;
+  width?: number;
+  height?: number;
+  aspectRatio?: [number, number];
+  durationMs?: number;
+  videoCodec?: string;
+  audioCodec?: string;
+  fileSizeBytes?: number;
 }
 
 export interface TweetInfoResponse {
