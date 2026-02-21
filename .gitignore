@@ -7,3 +7,4 @@
 *.temp.mp4
 dist/
 node_modules/
+docs/pr-change-summary.md
