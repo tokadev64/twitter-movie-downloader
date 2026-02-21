@@ -25,6 +25,7 @@ jobs:
         run: deno install -Agrf jsr:@deno/deployctl
 
       - name: Deploy to Deno Deploy
-        run: deployctl deploy --prod --project=tw-movie-downloader-api --entrypoint=packages/api/mod.ts
+        run: deployctl deploy --prod --org=tokadev --project=tw-movie-downloader-api --env="TWITTER_BEARER_TOKEN=$TWITTER_BEARER_TOKEN" --entrypoint=packages/api/mod.ts
         env:
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
