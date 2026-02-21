@@ -23,13 +23,5 @@
     "lib": [
       "deno.window"
     ]
-  },
-  "deploy": {
-    "project": "6a37d5fc-648b-4322-9529-12a50b2f1b94",
-    "exclude": [
-      "**/node_modules"
-    ],
-    "include": [],
-    "entrypoint": "packages/api/mod.ts"
   }
 }
