@@ -1,5 +1,6 @@
 import type { MediaInfo } from "@tmd/shared";
 import { buildGraphqlUrl, extractMediaInfo } from "@tmd/shared";
+import type { ApiEnv } from "./env.ts";
 
 const GUEST_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -10,15 +11,16 @@ interface GuestTokenCache {
 
 let guestTokenCache: GuestTokenCache | null = null;
 
-function getBearerToken(): string {
-  const token = Deno.env.get("TWITTER_BEARER_TOKEN");
+function getBearerToken(env?: ApiEnv): string {
+  const token = env?.TWITTER_BEARER_TOKEN ??
+    (typeof Deno !== "undefined" ? Deno.env.get("TWITTER_BEARER_TOKEN") : undefined);
   if (!token) {
     throw new Error("TWITTER_BEARER_TOKEN environment variable is required");
   }
   return token;
 }
 
-async function getGuestToken(): Promise<string> {
+async function getGuestToken(env?: ApiEnv): Promise<string> {
   const now = Date.now();
   if (guestTokenCache && guestTokenCache.expiresAt > now) {
     return guestTokenCache.token;
@@ -27,7 +29,7 @@ async function getGuestToken(): Promise<string> {
   const response = await fetch("https://api.twitter.com/1.1/guest/activate.json", {
     method: "POST",
     headers: {
-      Authorization: getBearerToken(),
+      Authorization: getBearerToken(env),
     },
   });
 
@@ -44,13 +46,13 @@ async function getGuestToken(): Promise<string> {
   return guestTokenCache.token;
 }
 
-export async function fetchTweetMedia(tweetId: string): Promise<MediaInfo[]> {
-  const guestToken = await getGuestToken();
+export async function fetchTweetMedia(tweetId: string, env?: ApiEnv): Promise<MediaInfo[]> {
+  const guestToken = await getGuestToken(env);
   const url = buildGraphqlUrl(tweetId);
 
   const response = await fetch(url, {
     headers: {
-      Authorization: getBearerToken(),
+      Authorization: getBearerToken(env),
       "x-guest-token": guestToken,
     },
   });

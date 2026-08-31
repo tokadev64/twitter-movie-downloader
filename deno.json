@@ -14,6 +14,9 @@
     "dev:api": "deno run --allow-net --allow-env --allow-run --allow-read --allow-write --watch packages/api/mod.ts",
     "dev:web": "cd packages/web && deno task dev",
     "build:web": "cd packages/web && deno task build",
+    "build:cf": "cd packages/web && deno task build && deno run --allow-read --allow-write prepare-cloudflare-dist.ts",
+    "dev:worker": "deno run -A npm:wrangler dev",
+    "deploy:cf": "deno task build:cf && deno run -A npm:wrangler deploy",
     "lint": "deno run -A npm:@biomejs/biome check",
     "format": "deno run -A npm:@biomejs/biome check --write",
     "check": "deno run -A npm:@biomejs/biome check"

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { MediaInfo } from "@tmd/shared";
 import { computed } from "vue";
+import { API_BASE_URL } from "../config.ts";
 
 const props = defineProps<{
   mediaList: MediaInfo[];
   tweetId: string;
 }>();
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 function formatQuality(quality: string): string {
   if (quality === "unknown") return "Unknown Quality";

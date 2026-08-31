@@ -1,0 +1,43 @@
+name: Deploy to Cloudflare
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - "wrangler.toml"
+      - "deno.json"
+      - "deno.lock"
+      - ".github/workflows/deploy-cloudflare.yml"
+
+concurrency:
+  group: cloudflare-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build WebUI for Cloudflare
+        run: deno task build:cf
+
+      - name: Cache Worker dependencies
+        run: deno cache packages/api/worker.ts
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+        run: |
+          printf '%s' "$TWITTER_BEARER_TOKEN" | deno run -A npm:wrangler secret put TWITTER_BEARER_TOKEN
+          deno run -A npm:wrangler deploy

@@ -1,6 +1,7 @@
 import type { ApiErrorResponse } from "@tmd/shared";
 import { extractTweetId } from "@tmd/shared";
 import type { Context } from "hono";
+import type { ApiEnv } from "../env.ts";
 import { fetchTweetMedia } from "../twitter-client.ts";
 
 async function streamMp4Proxy(videoUrl: string): Promise<Response> {
@@ -15,7 +16,7 @@ async function streamMp4Proxy(videoUrl: string): Promise<Response> {
   });
 }
 
-export async function handleTweetDownload(c: Context): Promise<Response> {
+export async function handleTweetDownload(c: Context<{ Bindings: ApiEnv }>): Promise<Response> {
   try {
     const tweetId = c.req.param("id");
     const quality = c.req.query("quality");
@@ -28,8 +29,16 @@ export async function handleTweetDownload(c: Context): Promise<Response> {
       return c.json(body, 400);
     }
 
+    if (!tweetId) {
+      const body: { data: null; error: ApiErrorResponse } = {
+        data: null,
+        error: { error: "tweet id is required", code: "INVALID_REQUEST" },
+      };
+      return c.json(body, 400);
+    }
+
     const validatedId = extractTweetId(tweetId);
-    const mediaList = await fetchTweetMedia(validatedId);
+    const mediaList = await fetchTweetMedia(validatedId, c.env);
 
     const mp4Media = mediaList.filter((m) => m.quality !== "HLS");
     const media = mp4Media.find((m) => m.quality === quality);

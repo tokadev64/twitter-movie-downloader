@@ -1,14 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { Hono } from "hono";
-import { handleHealth } from "./health.ts";
-import { handleTweetInfo } from "./tweet-info.ts";
-
-function createApp(): Hono {
-  const app = new Hono();
-  app.get("/api/health", handleHealth);
-  app.get("/api/tweet/:id", handleTweetInfo);
-  return app;
-}
+import { createApp } from "../app.ts";
 
 Deno.test("GET /api/health: returns ok status", async () => {
   const app = createApp();

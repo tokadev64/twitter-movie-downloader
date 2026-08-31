@@ -1,6 +1,7 @@
 import type { ApiErrorResponse, MediaInfo, TweetInfoResponse } from "@tmd/shared";
 import { extractTweetId, isAllowedVideoHost } from "@tmd/shared";
 import type { Context } from "hono";
+import type { ApiEnv } from "../env.ts";
 import { fetchTweetMedia } from "../twitter-client.ts";
 
 const HEAD_TIMEOUT_MS = 3000;
@@ -23,11 +24,19 @@ async function enrichWithFileSize(mediaList: MediaInfo[]): Promise<MediaInfo[]> 
   return results.map((r, i) => (r.status === "fulfilled" ? r.value : mediaList[i]));
 }
 
-export async function handleTweetInfo(c: Context): Promise<Response> {
+export async function handleTweetInfo(c: Context<{ Bindings: ApiEnv }>): Promise<Response> {
   try {
     const tweetId = c.req.param("id");
+    if (!tweetId) {
+      const body: { data: null; error: ApiErrorResponse } = {
+        data: null,
+        error: { error: "tweet id is required", code: "INVALID_REQUEST" },
+      };
+      return c.json(body, 400);
+    }
+
     const validatedId = extractTweetId(tweetId);
-    const allMedia = await fetchTweetMedia(validatedId);
+    const allMedia = await fetchTweetMedia(validatedId, c.env);
     const mp4Media = allMedia.filter((m) => m.quality !== "HLS");
     const mediaList = await enrichWithFileSize(mp4Media);
 

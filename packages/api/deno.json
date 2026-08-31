@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "exports": "./mod.ts",
   "imports": {
-    "hono": "jsr:@hono/hono"
+    "hono": "npm:hono@^4",
+    "hono/cors": "npm:hono@^4/cors"
   }
 }

@@ -1,14 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { Hono } from "hono";
-import { handleTweetDownload } from "./tweet-download.ts";
-
-function createApp(): Hono {
-  const app = new Hono();
-  app.get("/api/tweet/:id/download", handleTweetDownload);
-  return app;
-}
-
-// --- バリデーションテスト ---
+import { createApp } from "../app.ts";
 
 Deno.test("GET /api/tweet/:id/download: returns 400 when quality is missing", async () => {
   const app = createApp();

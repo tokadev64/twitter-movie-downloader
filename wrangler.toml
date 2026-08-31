@@ -1,0 +1,17 @@
+name = "twitter-movie-downloader"
+main = "packages/api/worker.ts"
+compatibility_date = "2024-08-01"
+account_id = "79ece236c4bc33a318184e6f375ccdb7"
+
+[alias]
+"@tmd/shared" = "./packages/shared/worker.ts"
+
+[assets]
+directory = "packages/web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+html_handling = "auto-trailing-slash"
+run_worker_first = ["/api", "/api/*"]
+
+# カスタムドメインは Cloudflare ダッシュボードで設定する。
+# 例: tokadev.io/twitter-movie-downloader/* へのルート
