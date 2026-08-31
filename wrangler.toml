@@ -13,5 +13,12 @@ not_found_handling = "single-page-application"
 html_handling = "auto-trailing-slash"
 run_worker_first = ["/api", "/api/*"]
 
-# カスタムドメインは Cloudflare ダッシュボードで設定する。
-# 例: tokadev.io/twitter-movie-downloader/* へのルート
+# カスタムドメイン（同一 Cloudflare アカウント上の tokaga.me）
+[[routes]]
+pattern = "tokaga.me/twitter-movie-downloader/*"
+zone_name = "tokaga.me"
+
+# Web UI は /twitter-movie-downloader/ 配下だが API は同一オリジンの /api/* を呼ぶ
+[[routes]]
+pattern = "tokaga.me/api/*"
+zone_name = "tokaga.me"
