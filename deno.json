@@ -14,7 +14,8 @@
     "deploy:cf": "deno task build:cf && deno run -A npm:wrangler deploy",
     "lint": "deno run -A npm:@biomejs/biome check",
     "format": "deno run -A npm:@biomejs/biome check --write",
-    "check": "deno run -A npm:@biomejs/biome check"
+    "check": "deno run -A npm:@biomejs/biome check",
+    "ci:local": "deno run -A npm:@biomejs/biome format packages/ && deno run -A npm:@biomejs/biome lint packages/ && deno run -A npm:@biomejs/biome check packages/ && deno check packages/shared/mod.ts packages/cli/mod.ts packages/api/mod.ts && deno test --allow-net --allow-env packages/"
   },
   "compilerOptions": {
     "strict": true,
