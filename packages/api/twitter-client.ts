@@ -12,7 +12,8 @@ interface GuestTokenCache {
 let guestTokenCache: GuestTokenCache | null = null;
 
 function getBearerToken(env?: ApiEnv): string {
-  const token = env?.TWITTER_BEARER_TOKEN ??
+  const token =
+    env?.TWITTER_BEARER_TOKEN ??
     (typeof Deno !== "undefined" ? Deno.env.get("TWITTER_BEARER_TOKEN") : undefined);
   if (!token) {
     throw new Error("TWITTER_BEARER_TOKEN environment variable is required");

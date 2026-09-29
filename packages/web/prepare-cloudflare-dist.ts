@@ -1,4 +1,3 @@
-const distDir = new URL("./dist/", import.meta.url);
 const appDir = new URL("./dist/twitter-movie-downloader/", import.meta.url);
 
 await Deno.mkdir(appDir, { recursive: true });
