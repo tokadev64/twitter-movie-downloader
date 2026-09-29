@@ -1,0 +1,5 @@
+{
+  "name": "@tmd/web",
+  "private": true,
+  "type": "module"
+}

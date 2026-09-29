@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "exports": "./src/main.ts",
   "tasks": {
-    "dev": "deno run -A npm:vite",
-    "build": "deno run -A npm:vite build",
-    "preview": "deno run -A npm:vite preview"
+    "dev": "node ../../node_modules/vite-plus/bin/vp dev",
+    "build": "node ../../node_modules/vite-plus/bin/vp build",
+    "preview": "node ../../node_modules/vite-plus/bin/vp preview"
   },
   "imports": {
     "vue": "npm:vue@^3.5.43",
-    "@vitejs/plugin-vue": "npm:@vitejs/plugin-vue@^6.0.9"
+    "@vitejs/plugin-vue": "npm:@vitejs/plugin-vue@^6.0.9",
+    "vite-plus": "npm:vite-plus@^1.0.0",
+    "vite-plus/client": "npm:vite-plus@^1.0.0/client"
   }
 }
