@@ -1,4 +1,4 @@
-type HookInput = {
+export type HookInput = {
   command?: string;
 };
 
@@ -18,7 +18,7 @@ function tail(text: string): string {
   return trimmed.slice(trimmed.length - MAX_MESSAGE_CHARS);
 }
 
-const raw = await new Response(Deno.stdin.readable).text();
+const raw = await Bun.stdin.text();
 let command = "";
 if (raw.trim().length > 0) {
   const input = JSON.parse(raw) as HookInput;
@@ -27,18 +27,25 @@ if (raw.trim().length > 0) {
 
 if (!isPullRequestCreate(command)) {
   respond({ permission: "allow" });
-  Deno.exit(0);
+  process.exit(0);
 }
 
-let result: Deno.CommandOutput;
+let code: number;
+let output = "";
 try {
-  result = await new Deno.Command("deno", {
-    args: ["task", "ci:local"],
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
+  const proc = Bun.spawn(["bun", "run", "ci:local"], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+  code = exitCode;
+  output = `${stdout}\n${stderr}`;
 } catch (error) {
-  const message = `deno task ci:local を起動できなかったため PR 作成を止めました。\n${
+  const message = `bun run ci:local を起動できなかったため PR 作成を止めました。\n${
     error instanceof Error ? error.message : String(error)
   }`;
   respond({
@@ -46,18 +53,15 @@ try {
     user_message: message,
     agent_message: message,
   });
-  Deno.exit(0);
+  process.exit(0);
 }
 
-if (result.code === 0) {
+if (code === 0) {
   respond({ permission: "allow" });
-  Deno.exit(0);
+  process.exit(0);
 }
 
-const output = tail(
-  `${new TextDecoder().decode(result.stdout)}\n${new TextDecoder().decode(result.stderr)}`,
-);
-const message = `deno task ci:local が失敗したため PR 作成を止めました。\n${output}`;
+const message = `bun run ci:local が失敗したため PR 作成を止めました。\n${tail(output)}`;
 respond({
   permission: "deny",
   user_message: message,

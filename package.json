@@ -1,0 +1,34 @@
+{
+  "name": "twitter-movie-downloader",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "test:shared": "bun test packages/shared",
+    "test:api": "bun test packages/api",
+    "tw": "bun packages/cli/mod.ts",
+    "dev:api": "bun --watch packages/api/mod.ts",
+    "dev:web": "bun run --cwd packages/web dev",
+    "build:web": "bun run --cwd packages/web build",
+    "build:cf": "bun run build:web && bun packages/web/prepare-cloudflare-dist.ts",
+    "preview:web": "bun run --cwd packages/web preview",
+    "dev:worker": "wrangler dev",
+    "deploy:cf": "bun run build:cf && wrangler deploy",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "check": "vp check",
+    "ci:local": "vp check && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "fast-check": "4.10.2",
+    "typescript": "^5.9.3",
+    "vite-plus": "^1.0.0",
+    "wrangler": "^4.142.0"
+  },
+  "packageManager": "bun@1.3.14"
+}

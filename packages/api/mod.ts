@@ -2,4 +2,7 @@ import { createApp } from "./app.ts";
 
 const app = createApp();
 
-Deno.serve({ port: 8000 }, app.fetch);
+Bun.serve({
+  port: 8000,
+  fetch: app.fetch,
+});

@@ -2,6 +2,7 @@
 .env.local
 .deno/
 .biome/
+.vite/
 .claude/log/
 *.temp
 *.temp.mp4

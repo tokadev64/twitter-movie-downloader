@@ -1,0 +1,9 @@
+{
+  "name": "@tmd/api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@tmd/shared": "workspace:*",
+    "hono": "^4.13.10"
+  }
+}

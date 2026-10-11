@@ -1,40 +1,42 @@
-import { assertEquals, assertThrows } from "jsr:@std/assert";
-import fc from "npm:fast-check";
+import { expect, test } from "bun:test";
+
+import fc from "fast-check";
+
 import { validateFormat } from "./validate-format.ts";
 
 // --- Unit Tests ---
 
-Deno.test("validateFormat: accepts 'mp4'", () => {
-  assertEquals(validateFormat("mp4"), "mp4");
+test("validateFormat: accepts 'mp4'", () => {
+  expect(validateFormat("mp4")).toEqual("mp4");
 });
 
-Deno.test("validateFormat: throws on 'mov' (removed format)", () => {
-  assertThrows(() => validateFormat("mov"), Error, 'Invalid format: "mov". Supported formats: mp4');
+test("validateFormat: throws on 'mov' (removed format)", () => {
+  expect(() => validateFormat("mov")).toThrow('Invalid format: "mov". Supported formats: mp4');
 });
 
-Deno.test("validateFormat: throws on invalid format", () => {
-  assertThrows(() => validateFormat("avi"), Error, 'Invalid format: "avi". Supported formats: mp4');
+test("validateFormat: throws on invalid format", () => {
+  expect(() => validateFormat("avi")).toThrow('Invalid format: "avi". Supported formats: mp4');
 });
 
-Deno.test("validateFormat: throws on empty string", () => {
-  assertThrows(() => validateFormat(""), Error, 'Invalid format: "". Supported formats: mp4');
+test("validateFormat: throws on empty string", () => {
+  expect(() => validateFormat("")).toThrow('Invalid format: "". Supported formats: mp4');
 });
 
-Deno.test("validateFormat: case-sensitive — rejects uppercase", () => {
-  assertThrows(() => validateFormat("MP4"), Error);
+test("validateFormat: case-sensitive — rejects uppercase", () => {
+  expect(() => validateFormat("MP4")).toThrow(Error);
 });
 
 // --- PBT ---
 
-Deno.test("PBT: validateFormat round-trip — 'mp4' always returns itself", () => {
+test("PBT: validateFormat round-trip — 'mp4' always returns itself", () => {
   fc.assert(
     fc.property(fc.constant("mp4"), (format) => {
-      assertEquals(validateFormat(format), format);
+      expect(validateFormat(format)).toEqual(format);
     }),
   );
 });
 
-Deno.test("PBT: validateFormat throws on arbitrary non-valid strings", () => {
+test("PBT: validateFormat throws on arbitrary non-valid strings", () => {
   fc.assert(
     fc.property(
       fc.string().filter((s) => s !== "mp4"),
@@ -45,7 +47,7 @@ Deno.test("PBT: validateFormat throws on arbitrary non-valid strings", () => {
         } catch {
           threw = true;
         }
-        assertEquals(threw, true);
+        expect(threw).toEqual(true);
       },
     ),
   );

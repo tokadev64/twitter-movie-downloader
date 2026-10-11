@@ -12,18 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: denoland/setup-deno@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          deno-version: v2.x
+          bun-version: 1.3.14
 
-      - name: Lint (Biome)
-        run: deno run -A npm:@biomejs/biome check packages/
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
-      - name: Type check
-        run: |
-          deno check packages/shared/mod.ts
-          deno check packages/cli/mod.ts
-          deno check packages/api/mod.ts
-
-      - name: Test
-        run: deno test --allow-net --allow-env packages/
+      - name: Check and test
+        run: bun run ci:local

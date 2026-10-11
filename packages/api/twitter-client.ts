@@ -1,5 +1,6 @@
 import type { MediaInfo } from "@tmd/shared";
 import { buildGraphqlUrl, extractMediaInfo } from "@tmd/shared";
+
 import type { ApiEnv } from "./env.ts";
 
 const GUEST_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -11,10 +12,13 @@ interface GuestTokenCache {
 
 let guestTokenCache: GuestTokenCache | null = null;
 
+function readProcessEnv(name: string): string | undefined {
+  if (typeof process === "undefined") return undefined;
+  return process.env[name];
+}
+
 function getBearerToken(env?: ApiEnv): string {
-  const token =
-    env?.TWITTER_BEARER_TOKEN ??
-    (typeof Deno !== "undefined" ? Deno.env.get("TWITTER_BEARER_TOKEN") : undefined);
+  const token = env?.TWITTER_BEARER_TOKEN ?? readProcessEnv("TWITTER_BEARER_TOKEN");
   if (!token) {
     throw new Error("TWITTER_BEARER_TOKEN environment variable is required");
   }
