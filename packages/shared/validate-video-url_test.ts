@@ -1,52 +1,48 @@
-import { assertEquals, assertThrows } from "jsr:@std/assert";
-import fc from "npm:fast-check";
+import { expect, test } from "bun:test";
+
+import fc from "fast-check";
+
 import { isAllowedVideoHost, validateVideoUrl } from "./validate-video-url.ts";
 
-Deno.test("validateVideoUrl: accepts valid HTTPS URL", () => {
+test("validateVideoUrl: accepts valid HTTPS URL", () => {
   validateVideoUrl("https://video.twimg.com/ext_tw_video/123/pu/vid/720x1280/abc.mp4");
 });
 
-Deno.test("validateVideoUrl: throws on HTTP URL", () => {
-  assertThrows(
-    () => validateVideoUrl("http://video.twimg.com/video.mp4"),
-    Error,
+test("validateVideoUrl: throws on HTTP URL", () => {
+  expect(() => validateVideoUrl("http://video.twimg.com/video.mp4")).toThrow(
     "Invalid video URL: HTTPS required",
   );
 });
 
-Deno.test("validateVideoUrl: throws on empty string", () => {
-  assertThrows(() => validateVideoUrl(""), Error, "Invalid video URL: HTTPS required");
+test("validateVideoUrl: throws on empty string", () => {
+  expect(() => validateVideoUrl("")).toThrow("Invalid video URL: HTTPS required");
 });
 
-Deno.test("validateVideoUrl: throws on relative path", () => {
-  assertThrows(
-    () => validateVideoUrl("/path/to/video.mp4"),
-    Error,
-    "Invalid video URL: HTTPS required",
-  );
+test("validateVideoUrl: throws on relative path", () => {
+  expect(() => validateVideoUrl("/path/to/video.mp4")).toThrow("Invalid video URL: HTTPS required");
 });
 
 // --- isAllowedVideoHost ---
 
-Deno.test("isAllowedVideoHost: allows video.twimg.com", () => {
-  assertEquals(isAllowedVideoHost("https://video.twimg.com/ext_tw_video/123/vid.mp4"), true);
+test("isAllowedVideoHost: allows video.twimg.com", () => {
+  expect(isAllowedVideoHost("https://video.twimg.com/ext_tw_video/123/vid.mp4")).toEqual(true);
 });
 
-Deno.test("isAllowedVideoHost: allows pbs.twimg.com", () => {
-  assertEquals(isAllowedVideoHost("https://pbs.twimg.com/thumb.jpg"), true);
+test("isAllowedVideoHost: allows pbs.twimg.com", () => {
+  expect(isAllowedVideoHost("https://pbs.twimg.com/thumb.jpg")).toEqual(true);
 });
 
-Deno.test("isAllowedVideoHost: rejects unknown host", () => {
-  assertEquals(isAllowedVideoHost("https://evil.com/video.mp4"), false);
+test("isAllowedVideoHost: rejects unknown host", () => {
+  expect(isAllowedVideoHost("https://evil.com/video.mp4")).toEqual(false);
 });
 
-Deno.test("isAllowedVideoHost: rejects invalid URL", () => {
-  assertEquals(isAllowedVideoHost("not-a-url"), false);
+test("isAllowedVideoHost: rejects invalid URL", () => {
+  expect(isAllowedVideoHost("not-a-url")).toEqual(false);
 });
 
 // --- PBT ---
 
-Deno.test("PBT: validateVideoUrl always throws for non-HTTPS URLs", () => {
+test("PBT: validateVideoUrl always throws for non-HTTPS URLs", () => {
   fc.assert(
     fc.property(
       fc.constantFrom("http://", "ftp://", "ws://", "file://", "data:", ""),
@@ -54,7 +50,7 @@ Deno.test("PBT: validateVideoUrl always throws for non-HTTPS URLs", () => {
       (scheme, path) => {
         const url = `${scheme}${path}`;
         if (!url.startsWith("https://")) {
-          assertThrows(() => validateVideoUrl(url), Error, "HTTPS required");
+          expect(() => validateVideoUrl(url)).toThrow("HTTPS required");
         }
       },
     ),

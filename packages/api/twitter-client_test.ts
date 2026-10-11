@@ -1,20 +1,23 @@
-import { assertRejects } from "jsr:@std/assert";
+import { test } from "bun:test";
+import assert from "node:assert/strict";
+
 import { fetchTweetMedia, resetGuestTokenCache } from "./twitter-client.ts";
 
-Deno.test("fetchTweetMedia: throws without TWITTER_BEARER_TOKEN", async () => {
+test("fetchTweetMedia: throws without TWITTER_BEARER_TOKEN", async () => {
   resetGuestTokenCache();
-  const original = Deno.env.get("TWITTER_BEARER_TOKEN");
-  Deno.env.delete("TWITTER_BEARER_TOKEN");
+  const original = process.env.TWITTER_BEARER_TOKEN;
+  delete process.env.TWITTER_BEARER_TOKEN;
 
   try {
-    await assertRejects(
+    await assert.rejects(
       () => fetchTweetMedia("123456789"),
-      Error,
-      "TWITTER_BEARER_TOKEN environment variable is required",
+      (error: unknown) =>
+        error instanceof Error &&
+        error.message.includes("TWITTER_BEARER_TOKEN environment variable is required"),
     );
   } finally {
     if (original) {
-      Deno.env.set("TWITTER_BEARER_TOKEN", original);
+      process.env.TWITTER_BEARER_TOKEN = original;
     }
   }
 });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MediaInfo } from "@tmd/shared";
 import { computed } from "vue";
+
 import { API_BASE_URL } from "../config.ts";
 
 const props = defineProps<{
@@ -87,8 +88,20 @@ const duration = computed(() => formatDuration(props.mediaList[0]?.durationMs));
           </span>
         </div>
         <a :href="downloadUrl(media)" class="download-btn" aria-label="Download">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M3 15.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M3 15.5h14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
         </a>
       </li>

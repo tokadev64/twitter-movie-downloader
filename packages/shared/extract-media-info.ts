@@ -39,7 +39,7 @@ export function parseVideoUrlMetadata(url: string): VideoUrlMetadata | undefined
   return undefined;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Twitter API response has complex dynamic structure
+// oxlint-disable-next-line typescript/no-explicit-any -- Twitter API response has complex dynamic structure
 export function extractMediaInfo(tweetData: any): MediaInfo[] {
   if (!tweetData.data?.tweetResult?.result) {
     throw new Error("Tweet data not available");

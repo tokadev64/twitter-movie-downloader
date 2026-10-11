@@ -1,0 +1,15 @@
+---
+description: PR 作成前に formatter、linter、test を実行する
+alwaysApply: true
+---
+
+# PR 作成前のチェック
+
+`gh pr create` の前に `bun run ci:local` を実行する。失敗したら PR を作らず、出力を直してから再実行する。
+
+`ci:local` は次を順に実行する。
+
+1. `vp check`（Oxfmt のフォーマット、Oxlint の lint、型チェック）
+2. test: `bun test`
+
+`.cursor/hooks/pr-check.ts` が `gh pr create` の直前に同じタスクを実行する。失敗時はそのコマンドを止める。

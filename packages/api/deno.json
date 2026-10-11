@@ -1,9 +1,0 @@
-{
-  "name": "@tmd/api",
-  "version": "0.1.0",
-  "exports": "./mod.ts",
-  "imports": {
-    "hono": "npm:hono@^4",
-    "hono/cors": "npm:hono@^4/cors"
-  }
-}
