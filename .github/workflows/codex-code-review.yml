@@ -9,8 +9,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      has_openai_key: ${{ steps.check.outputs.has_openai_key }}
+    steps:
+      - name: Check OPENAI_API_KEY secret
+        id: check
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            echo "has_openai_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_openai_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
   codex:
-    if: github.event.pull_request.draft == false
+    needs: preflight
+    if: github.event.pull_request.draft == false && needs.preflight.outputs.has_openai_key == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
