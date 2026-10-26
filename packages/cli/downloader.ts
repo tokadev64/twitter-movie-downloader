@@ -1,3 +1,5 @@
+import { rename, rm, writeFile } from "node:fs/promises";
+
 import {
   buildGraphqlUrl,
   extractMediaInfo,
@@ -16,7 +18,7 @@ export class TwitterVideoDownloader {
   private readonly bearerToken: string;
 
   constructor() {
-    this.bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN") ?? DEFAULT_BEARER_TOKEN;
+    this.bearerToken = process.env.TWITTER_BEARER_TOKEN ?? DEFAULT_BEARER_TOKEN;
   }
 
   private async getGuestToken(): Promise<string> {
@@ -35,7 +37,7 @@ export class TwitterVideoDownloader {
     return data.guest_token;
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Twitter API response has complex dynamic structure
+  // oxlint-disable-next-line typescript/no-explicit-any -- Twitter API response has complex dynamic structure
   private async getTweetData(tweetId: string): Promise<any> {
     if (!this.guestToken) {
       this.guestToken = await this.getGuestToken();
@@ -57,52 +59,54 @@ export class TwitterVideoDownloader {
     return await response.json();
   }
 
+  private async runFfmpeg(args: string[]): Promise<{ code: number; stderr: string }> {
+    const proc = Bun.spawn(["ffmpeg", ...args], {
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+    return { code, stderr };
+  }
+
+  private logFfmpegErrors(stderr: string): void {
+    for (const line of stderr.split("\n")) {
+      if (line.includes("error") || line.includes("Error")) {
+        console.error("FFmpeg error:", line);
+      }
+    }
+  }
+
   private async downloadWithHLS(hlsUrl: string, outputPath: string): Promise<void> {
     validateVideoUrl(hlsUrl);
     console.log("Downloading HLS stream with FFmpeg...");
 
     const tempMp4 = `${outputPath}.temp.mp4`;
+    const { code, stderr } = await this.runFfmpeg([
+      "-i",
+      hlsUrl,
+      "-c:v",
+      "libx264",
+      "-c:a",
+      "aac",
+      "-preset",
+      "medium",
+      "-crf",
+      "23",
+      "-movflags",
+      "+faststart",
+      "-pix_fmt",
+      "yuv420p",
+      "-y",
+      tempMp4,
+    ]);
+    this.logFfmpegErrors(stderr);
 
-    const ffmpegCommand = new Deno.Command("ffmpeg", {
-      args: [
-        "-i",
-        hlsUrl,
-        "-c:v",
-        "libx264",
-        "-c:a",
-        "aac",
-        "-preset",
-        "medium",
-        "-crf",
-        "23",
-        "-movflags",
-        "+faststart",
-        "-pix_fmt",
-        "yuv420p",
-        "-y",
-        tempMp4,
-      ],
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const process = ffmpegCommand.spawn();
-
-    const decoder = new TextDecoder();
-    for await (const chunk of process.stderr) {
-      const text = decoder.decode(chunk);
-      if (text.includes("error") || text.includes("Error")) {
-        console.error("FFmpeg error:", text);
-      }
-    }
-
-    const { success } = await process.status;
-
-    if (!success) {
+    if (code !== 0) {
       throw new Error("FFmpeg failed to download HLS stream");
     }
 
-    await Deno.rename(tempMp4, outputPath);
+    await rename(tempMp4, outputPath);
     console.log(`Downloaded and converted to: ${outputPath}`);
   }
 
@@ -117,55 +121,46 @@ export class TwitterVideoDownloader {
 
     const data = await response.arrayBuffer();
     const tempFile = `${outputPath}.temp`;
-    await Deno.writeFile(tempFile, new Uint8Array(data));
+    await writeFile(tempFile, new Uint8Array(data));
 
     console.log("Re-encoding video with FFmpeg...");
 
-    const ffmpegCommand = new Deno.Command("ffmpeg", {
-      args: [
-        "-i",
-        tempFile,
-        "-c:v",
-        "libx264",
-        "-c:a",
-        "aac",
-        "-preset",
-        "medium",
-        "-crf",
-        "23",
-        "-movflags",
-        "+faststart",
-        "-pix_fmt",
-        "yuv420p",
-        "-y",
-        outputPath,
-      ],
-      stdout: "piped",
-      stderr: "piped",
-    });
+    const { code, stderr } = await this.runFfmpeg([
+      "-i",
+      tempFile,
+      "-c:v",
+      "libx264",
+      "-c:a",
+      "aac",
+      "-preset",
+      "medium",
+      "-crf",
+      "23",
+      "-movflags",
+      "+faststart",
+      "-pix_fmt",
+      "yuv420p",
+      "-y",
+      outputPath,
+    ]);
+    this.logFfmpegErrors(stderr);
 
-    const process = ffmpegCommand.spawn();
-    const { success } = await process.status;
-
-    if (!success) {
-      await Deno.remove(tempFile).catch(() => {});
+    if (code !== 0) {
+      await rm(tempFile, { force: true });
       throw new Error("FFmpeg failed to re-encode video");
     }
 
-    await Deno.remove(tempFile);
+    await rm(tempFile, { force: true });
     console.log(`Downloaded and re-encoded to: ${outputPath}`);
   }
 
   private async checkFFmpeg(): Promise<boolean> {
     try {
-      const command = new Deno.Command("ffmpeg", {
-        args: ["-version"],
-        stdout: "piped",
-        stderr: "piped",
+      const proc = Bun.spawn(["ffmpeg", "-version"], {
+        stdout: "ignore",
+        stderr: "ignore",
       });
-
-      const { success } = await command.output();
-      return success;
+      return (await proc.exited) === 0;
     } catch {
       return false;
     }
@@ -179,7 +174,7 @@ export class TwitterVideoDownloader {
         console.error("Ubuntu/Debian: sudo apt-get install ffmpeg");
         console.error("macOS: brew install ffmpeg");
         console.error("Windows: Download from https://ffmpeg.org/download.html");
-        Deno.exit(1);
+        process.exit(1);
       }
 
       console.log("Extracting tweet ID...");
@@ -214,7 +209,7 @@ export class TwitterVideoDownloader {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       console.error(`Error: ${message}`);
-      Deno.exit(1);
+      process.exit(1);
     }
   }
 }

@@ -1,18 +1,19 @@
-import { assertEquals } from "jsr:@std/assert";
+import { expect, test } from "bun:test";
+
 import { createApp } from "../app.ts";
 
-Deno.test("GET /api/health: returns ok status", async () => {
+test("GET /api/health: returns ok status", async () => {
   const app = createApp();
   const res = await app.request("/api/health");
   const body = await res.json();
-  assertEquals(res.status, 200);
-  assertEquals(body.status, "ok");
+  expect(res.status).toEqual(200);
+  expect(body.status).toEqual("ok");
 });
 
-Deno.test("GET /api/tweet/:id: returns 400 for invalid tweet ID", async () => {
+test("GET /api/tweet/:id: returns 400 for invalid tweet ID", async () => {
   const app = createApp();
   const res = await app.request("/api/tweet/not-a-valid-id");
   const body = await res.json();
-  assertEquals(res.status, 400);
-  assertEquals(body.error.code, "INVALID_REQUEST");
+  expect(res.status).toEqual(400);
+  expect(body.error.code).toEqual("INVALID_REQUEST");
 });

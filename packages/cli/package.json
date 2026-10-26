@@ -1,0 +1,8 @@
+{
+  "name": "@tmd/cli",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@tmd/shared": "workspace:*"
+  }
+}

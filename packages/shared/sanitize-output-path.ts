@@ -1,4 +1,5 @@
-import { basename, extname } from "jsr:@std/path";
+import { basename, extname } from "node:path";
+
 import type { VideoFormat } from "./types.ts";
 
 export function sanitizeOutputPath(
