@@ -1,0 +1,144 @@
+name: Codex Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: codex-code-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      has_openai_key: ${{ steps.check.outputs.has_openai_key }}
+    steps:
+      - name: Check OPENAI_API_KEY secret
+        id: check
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            echo "has_openai_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_openai_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  codex:
+    needs: preflight
+    if: github.event.pull_request.draft == false && needs.preflight.outputs.has_openai_key == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Pre-fetch base and head refs for the PR
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags origin \
+            "$PR_BASE_REF" \
+            "+refs/pull/$PR_NUMBER/head"
+
+      - name: Run Codex
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":read-only"
+          prompt: |
+            これは ${{ github.repository }} の PR #${{ github.event.pull_request.number }} です。
+            コメントは日本語で書いてください。
+
+            この PR が導入した差分だけをレビューしてください。次を使って差分を把握してください:
+              git log --oneline ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
+              git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
+
+            リポジトリの前提:
+            - Bun + TypeScript の monorepo（packages/api, cli, shared, web）
+            - フォーマット / lint / 型チェックは Vite+（`vp check` = Oxfmt + Oxlint）
+            - テストは `bun test`、本番相当ビルドは `bun run build:cf`
+            - 後方互換のための逃げ道や不要な抽象化は増やさない（YAGNI、fail-close）
+
+            見る観点:
+            - バグ、回帰、エッジケースの見落とし
+            - セキュリティ（秘密情報の混入、入力検証、不安全な URL / パス処理）
+            - 公開契約やデータ意味の破壊
+            - テスト不足（特に共有ロジックと API ハンドラ）
+            - プロジェクト規約との不一致
+
+            指摘の出し方:
+            - この差分で新しく生じたか明確に悪化したものに限る
+            - 好みや根拠のない将来懸念だけの指摘はしない
+            - 簡潔かつ具体的に書く（ファイルパスと該当箇所がわかるように）
+            - 問題がなければ「重大な指摘なし」と短く書いてよい
+
+            Pull request title and body:
+            ----
+            ${{ github.event.pull_request.title }}
+            ${{ github.event.pull_request.body }}
+
+  post_feedback:
+    runs-on: ubuntu-latest
+    needs: codex
+    if: needs.codex.outputs.final_message != ''
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Report Codex feedback
+        uses: actions/github-script@v7
+        env:
+          CODEX_FINAL_MESSAGE: ${{ needs.codex.outputs.final_message }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const marker = "<!-- codex-code-review -->";
+            const message = process.env.CODEX_FINAL_MESSAGE;
+            if (!message) {
+              core.info("No Codex message to post.");
+              return;
+            }
+
+            const body = `${marker}\n## Codex Code Review\n\n${message}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) =>
+              (comment.body || "").includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated existing Codex review comment ${existing.id}`);
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body,
+            });
+            core.info("Created Codex review comment");
