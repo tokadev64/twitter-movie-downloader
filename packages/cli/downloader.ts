@@ -10,7 +10,7 @@ import {
 
 // Twitter ウェブクライアントの公開 Bearer Token
 // セキュリティ上、環境変数での上書きを推奨
-const DEFAULT_BEARER_TOKEN =
+export const DEFAULT_BEARER_TOKEN =
   "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 
 export class TwitterVideoDownloader {

@@ -9,7 +9,8 @@
     "test": "bun test",
     "test:shared": "bun test packages/shared",
     "test:api": "bun test packages/api",
-    "test:e2e": "bun run build:cf",
+    "test:spec": "bun test packages/shared/spec",
+    "test:e2e": "bun test e2e",
     "tw": "bun packages/cli/mod.ts",
     "dev:api": "bun --watch packages/api/mod.ts",
     "dev:web": "bun run --cwd packages/web dev",
@@ -23,7 +24,7 @@
     "format:check": "vp fmt --check",
     "check": "vp check",
     "ci:local": "vp check && bun test",
-    "ci:deps": "vp fmt --check && vp lint && bun test && bun run test:e2e"
+    "ci:deps": "vp fmt --check && vp lint && bun test && bun run test:e2e && bun run build:cf"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

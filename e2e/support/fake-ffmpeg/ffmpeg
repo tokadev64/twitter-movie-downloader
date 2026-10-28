@@ -1,0 +1,24 @@
+#!/usr/bin/env bun
+import { appendFileSync, writeFileSync } from "node:fs";
+
+const args = Bun.argv.slice(2);
+const logPath = process.env.E2E_FFMPEG_LOG;
+if (logPath) {
+  appendFileSync(logPath, `${JSON.stringify(args)}\n`);
+}
+
+if (args[0] === "-version") {
+  process.exit(0);
+}
+
+const output = args.at(-1);
+if (output) {
+  if (process.env.E2E_FAKE_FFMPEG_FAIL) {
+    writeFileSync(output, "partial-video-bytes");
+    console.error("Error: fake ffmpeg failed");
+    process.exit(1);
+  }
+  writeFileSync(output, "fake-video-bytes");
+}
+
+process.exit(0);
