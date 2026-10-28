@@ -14,6 +14,12 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "packages/**/*.ts", "packages/**/*.vue", ".cursor/hooks/**/*.ts"],
+  "include": [
+    "vite.config.ts",
+    "packages/**/*.ts",
+    "packages/**/*.vue",
+    "e2e/**/*.ts",
+    ".cursor/hooks/**/*.ts"
+  ],
   "exclude": ["**/dist/**", "**/node_modules/**", ".devbox"]
 }
