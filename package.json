@@ -30,8 +30,13 @@
     "@vitejs/plugin-vue": "^6.0.9",
     "fast-check": "4.10.2",
     "typescript": "^5.9.3",
-    "vite-plus": "^1.0.0",
-    "wrangler": "^4.142.0"
+    "vite-plus": "^1.4.0",
+    "wrangler": "^4.152.0"
+  },
+  "overrides": {
+    "undici": "^7.30.1",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
+    "vitest": "5.0.5"
   },
   "packageManager": "bun@1.4.4"
 }
